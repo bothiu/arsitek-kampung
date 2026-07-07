@@ -1,7 +1,7 @@
 ---
 name: arsitek-kampung
 description: "Use when the user wants to discover and document website or project endpoints into a markdown inventory using hybrid code inspection and conditional crawling for verified Next.js targets."
-version: 1.0.0
+version: 1.1.0
 author: Hermes Agent
 license: MIT
 platforms: [linux, macos]
@@ -15,170 +15,206 @@ metadata:
 
 ## Overview
 
-Use this skill to build an **endpoint inventory** for a website or project and save the findings as a **markdown report**. The skill is optimized for mixed situations where the user may provide a local codebase, a live website, or both.
+Pakai skill ini saat user ingin **mencari, memetakan, dan mendokumentasikan endpoint** dari sebuah website atau project ke dalam **file markdown**.
 
-The core behavior is **hybrid by default**:
-1. inspect code and route definitions first
-2. identify the application stack and likely endpoint sources
-3. use crawl/browser-style discovery only when that branch is justified
-4. merge confirmed and inferred endpoints into a structured markdown file
+Filosofi skill ini:
+1. **hybrid by default**
+2. **code inspection dulu**
+3. **crawl hanya kalau perlu**
+4. untuk cabang crawl, **browser/web crawling hanya boleh dipakai kalau target sudah terverifikasi Next.js**
+5. untuk ekstraksi endpoint dari JavaScript pada cabang crawl Next.js, gunakan **LinkFinder**
 
-This skill is intentionally **documentation-focused**, not a pentest or fuzzing playbook. The goal is to map endpoints with evidence and clear confidence labels.
+Skill ini fokus pada **inventaris endpoint yang rapi, berbukti, dan bisa diaudit ulang**. Ini **bukan** skill pentest, brute-force, fuzzing, atau eksploitasi.
 
 ## When to Use
 
-Use this skill when the user says things like:
+Pakai skill ini kalau user minta hal seperti:
 - "cek endpoint project ini"
 - "list semua endpoint website ini"
-- "buat inventaris route"
-- "cari semua API endpoint"
+- "tolong petakan route project"
 - "buat file md daftar endpoint"
-- "petakan public surface dan route codebase"
+- "cek endpoint ini lalu carikan keluarga route terkait"
+- "inventaris semua public page dan API path"
 
-Do **not** use this skill for:
+Jangan pakai skill ini untuk:
 - vulnerability scanning
-- brute-force endpoint guessing
+- brute-force path guessing
 - load testing
-- authentication bypass testing
-- security exploitation workflows
+- auth bypass testing
+- security exploitation workflow
 
 ## Input Expectations
 
-Typical input:
-- a repo path
-- a website/domain
-- a specific endpoint to start from
-- a request like `tolong cek endpoint ini`
+Input yang umum:
+- path repo lokal
+- domain/website live
+- endpoint awal sebagai titik masuk
+- kombinasi repo + website
 
-Expected output:
-- a markdown file containing the endpoint inventory
-- grouped findings by source and confidence
-- evidence paths/URLs showing where each endpoint came from
+Output yang diharapkan:
+- file markdown daftar endpoint
+- endpoint dikelompokkan per kategori dan confidence
+- ada bukti asal endpoint: file path, route definition, JS asset, atau URL live
 
-## Discovery Modes
+## Mode Kerja
 
 ### 1. Code mode
-Use when the target is mainly a local project/repository.
+Pakai saat target utama adalah codebase lokal.
 
-Primary tools and methods:
+Tool utama:
 - `search_files`
 - `read_file`
-- `terminal` when route extraction needs stack-aware commands
+- `terminal` bila perlu untuk ekstraksi stack-aware
 
-Typical targets:
-- Laravel route files
-- Express/Nest routers
-- FastAPI/Flask decorators
-- Go mux/router registrations
-- Next.js `app/api/**/route.*` and `pages/api/**`
-- frontend code containing `fetch`, `axios`, `XMLHttpRequest`, or internal API paths
+Sumber yang diperiksa:
+- file route
+- controller/handler registration
+- helper API client
+- frontend `fetch` / `axios` / `XMLHttpRequest`
+- webhook callback definition
+- generator path/sitemap
 
 ### 2. Crawl mode
-Use when the target is mainly a live website and the user wants surface discovery.
+Pakai saat target utama adalah website live dan user ingin pemetaan surface eksternal.
 
-**Hard rule:** browser/web crawling tools are allowed only when the target has been verified as a **Next.js application**.
+**Aturan keras:** tool browser/web crawling hanya boleh dipakai kalau target sudah **terverifikasi Next.js**.
 
-If the site is not verified as Next.js, do **not** escalate into browser crawling for this skill. Fall back to code inspection or lightweight surface checks.
+Kalau target **bukan** Next.js, jangan pakai browser crawl sebagai jalur utama skill ini. Fallback ke:
+- code inspection
+- lightweight surface check
+- dokumentasi keterbatasan hasil
 
 ### 3. Hybrid mode
-Default mode for this skill.
+Ini mode default.
 
-Workflow:
-1. detect stack
-2. inspect code routes and endpoint references first
-3. if a live target exists and it is verified as Next.js, run the crawl branch
-4. merge everything into one markdown report
-5. clearly mark which endpoints are confirmed vs inferred
+Urutan kerja:
+1. deteksi stack
+2. scan route dan referensi endpoint dari codebase dulu
+3. kalau ada target live dan Next.js sudah terverifikasi, jalankan cabang crawl
+4. gabungkan semua hasil ke satu laporan markdown
+5. tandai mana yang confirmed, inferred, dan candidate
 
 ## Next.js Verification Gate
 
-Before using crawl/browser discovery, verify the target is actually Next.js.
+Sebelum memakai browser/web crawl, verifikasi dulu bahwa target memang Next.js.
 
-### Verify from codebase
-Look for one or more of:
-- `package.json` dependency on `next`
-- `next.config.js`, `next.config.mjs`, or `next.config.ts`
-- `app/` directory
-- `pages/` directory
+### Verifikasi dari codebase
+Cari satu atau lebih sinyal berikut:
+- dependency `next` di `package.json`
+- `next.config.js`, `next.config.mjs`, atau `next.config.ts`
+- folder `app/`
+- folder `pages/`
 - `app/api/**/route.ts|js`
 - `pages/api/**`
-- files using `generateStaticParams`, `route.ts`, or Next.js conventions
+- pola file seperti `generateStaticParams`, `route.ts`, `layout.tsx`, `page.tsx`
 
-### Verify from live site
-Look for one or more of:
-- `/_next/` in HTML or asset URLs
-- `/_next/static/` assets
-- page source or scripts characteristic of Next.js output
-- route/data behavior consistent with Next.js app/router patterns
+### Verifikasi dari website live
+Cari satu atau lebih sinyal berikut:
+- `/_next/` di HTML atau asset URL
+- `/_next/static/` di script/style asset
+- source HTML / script chunk khas Next.js
+- pola route/data khas App Router atau Pages Router
 
-If Next.js is not verified, document that the crawl branch was skipped by policy.
+Kalau Next.js tidak terverifikasi, tulis jelas di laporan bahwa **cabang crawl dilewati oleh policy skill**.
 
-## LinkFinder Rule
+## Aturan LinkFinder
 
-For the crawl branch, use **LinkFinder** (`linkfinder.py` from GerbenJavado/LinkFinder) as the JavaScript endpoint extraction tool.
-
-Repository/source:
+Untuk cabang crawl, gunakan **LinkFinder** (`linkfinder.py`) dari repo berikut:
 - `https://github.com/GerbenJavado/LinkFinder`
 
-### Why LinkFinder here
-LinkFinder extracts candidate endpoints/paths from JavaScript sources using regex-based parsing. For Next.js targets, this is useful for discovering:
-- API paths referenced from client bundles
-- route-like strings embedded in scripts
-- relative/internal endpoints not obvious from rendered HTML alone
+### Kenapa LinkFinder dipakai di skill ini
+LinkFinder berguna untuk mengekstrak kandidat endpoint dari JavaScript, terutama untuk target Next.js yang banyak menyimpan referensi path/API di bundle client.
 
-### When to use LinkFinder
-Use LinkFinder only when **all** are true:
-1. current branch is `crawl` or the crawl phase of `hybrid`
-2. target has been verified as Next.js
-3. JavaScript bundle or route script URLs are available to inspect
+Yang dicari biasanya:
+- path API yang dipanggil dari frontend
+- route-like string dalam bundle JS
+- endpoint internal relatif yang tidak kelihatan dari HTML render biasa
 
-### When not to use LinkFinder
-Do not use LinkFinder when:
-- the task is code-only
-- the target is not verified as Next.js
-- the endpoint list is already sufficiently recoverable from route files
-- the workflow would become guessy/noisy without clear evidence
+### Kapan LinkFinder boleh dipakai
+Gunakan LinkFinder hanya jika **semua** kondisi ini terpenuhi:
+1. mode saat ini `crawl` atau fase crawl dari `hybrid`
+2. target sudah terverifikasi Next.js
+3. ada JS asset / bundle / script URL yang relevan untuk dianalisis
 
-### LinkFinder usage pattern
-Preferred operator pattern:
-1. identify relevant JavaScript URLs or local JS artifacts
-2. run LinkFinder against those assets
-3. normalize and deduplicate matches
-4. classify results as `linkfinder-discovered`, not automatically `confirmed-live`
+### Kapan LinkFinder jangan dipakai
+Jangan pakai LinkFinder kalau:
+- task murni code-only
+- target belum/ tidak terverifikasi Next.js
+- daftar endpoint sudah cukup jelas dari file route
+- workflow akan jadi terlalu noisy tanpa bukti kuat
 
-Treat LinkFinder results as **candidate evidence** unless they are corroborated by route definitions, live behavior, or other concrete sources.
+### LinkFinder install cepat
+Contoh setup minimal:
 
-## Endpoint Sources to Inspect
+```bash
+git clone https://github.com/GerbenJavado/LinkFinder.git
+cd LinkFinder
+pip3 install -r requirements.txt
+python3 linkfinder.py -h
+```
 
-### Code sources
-- route definition files
-- controller/handler registration
-- API client helpers
-- service modules with fixed paths
-- frontend calls to `fetch`, `axios`, `useSWR`, `graphql`, etc.
-- webhook callback definitions
-- sitemap generators or path builders
+### Contoh command LinkFinder
 
-### Live sources
+#### 1. Satu file JS remote, output ke CLI
+```bash
+python3 linkfinder.py -i https://example.com/_next/static/chunks/app.js -o cli
+```
+
+#### 2. Filter hanya kandidat `/api/`
+```bash
+python3 linkfinder.py -i https://example.com/_next/static/chunks/app.js -r ^/api/ -o cli
+```
+
+#### 3. Simpan hasil HTML
+```bash
+python3 linkfinder.py -i https://example.com/_next/static/chunks/app.js -o results.html
+```
+
+#### 4. Analisis domain bila memang perlu
+```bash
+python3 linkfinder.py -i https://example.com -d
+```
+
+### Cara membaca hasil LinkFinder
+Hasil LinkFinder **jangan langsung dianggap endpoint confirmed-live**.
+
+Perlakukan dulu sebagai:
+- `linkfinder-discovered` jika baru muncul dari JS
+- naikkan confidence hanya jika cocok dengan route code, asset live, atau bukti lain
+
+## Sumber Endpoint yang Wajib Dicek
+
+### Dari code
+- `routes/*.php`
+- `app/api/**/route.*`
+- `pages/api/**`
+- Express/Nest router/controller
+- FastAPI/Flask decorator route
+- Go mux/router registration
+- helper `fetch`, `axios`, `graphql`, `useSWR`
+- webhook/callback handler
+- generator path, sitemap, atau feed
+
+### Dari surface live
 - homepage links
 - sitemap.xml
 - robots.txt
-- JS bundles and route chunks
-- navigation, footer, static links
-- documented callback or API paths exposed in public pages
+- menu / footer / static links
+- callback/API path yang terekspos di public page
+- JS bundle / chunk / route assets
 
-## Classification Rules
+## Aturan Klasifikasi
 
-Every endpoint in the report should be classified.
+Setiap endpoint di laporan harus punya label asal / confidence.
 
-Recommended labels:
-- `confirmed-code` — explicitly defined in route or handler code
-- `confirmed-live` — observed directly on the live surface
-- `linkfinder-discovered` — extracted from JS via LinkFinder
-- `inferred-dynamic` — dynamic route pattern inferred from code conventions
-- `unverified` — candidate exists but was not confirmed
+### Label confidence yang direkomendasikan
+- `confirmed-code` — route/handler jelas ada di code
+- `confirmed-live` — teramati langsung dari surface live
+- `linkfinder-discovered` — ditemukan dari JS via LinkFinder
+- `inferred-dynamic` — route dinamis terduga dari konvensi code
+- `unverified` — kandidat ada, tapi belum bisa dipastikan
 
-Recommended categories:
+### Kategori endpoint yang direkomendasikan
 - `public-page`
 - `api`
 - `auth`
@@ -186,30 +222,32 @@ Recommended categories:
 - `webhook`
 - `static-or-support`
 
-## Report Format
+## Format Laporan Markdown
 
-Write the inventory to a markdown file.
+Simpan hasil inventaris ke file markdown.
 
-Recommended structure:
+Struktur minimal yang direkomendasikan:
 
 ```md
 # Endpoint Inventory
 
 ## Summary
-- Target:
-- Mode:
-- Stack:
-- Next.js verified:
-- Crawl branch used:
-- Output generated at:
+- Target: /opt/data/workspace/app + https://example.com
+- Mode: hybrid
+- Stack: Next.js 15 + API routes
+- Next.js verified: yes
+- Crawl branch used: yes
+- Output generated at: 2026-07-07 17:00 UTC
 
 ## Public Pages
 - GET /
 - GET /about
+- GET /pricing
 
 ## API Endpoints
 - GET /api/users
 - POST /api/login
+- POST /api/contact
 
 ## Dynamic / Inferred Routes
 - GET /blog/{slug}
@@ -217,81 +255,109 @@ Recommended structure:
 
 ## LinkFinder Discoveries
 - /api/search
+- /api/revalidate
 - /internal/feed
 
 ## Evidence
 - Code:
-  - routes/web.php
   - app/api/users/route.ts
+  - app/blog/[slug]/page.tsx
+  - lib/api-client.ts
 - Live:
   - https://example.com/sitemap.xml
-  - https://example.com/_next/static/...
+  - https://example.com/_next/static/chunks/app.js
 
 ## Gaps / Unverified
-- Route family inferred but not live-verified
-- Candidate JS endpoint not mapped to route file
+- `/api/revalidate` muncul di JS tapi belum ditemukan route definitifnya
+- keluarga route `/products/{id}` inferred dari page dynamic, belum dicrawl semua variannya
 ```
+
+## One-Shot Recipes
+
+### Recipe A — Repo-only audit
+1. deteksi framework
+2. cari file route
+3. cari referensi `fetch` / `axios` / `api/`
+4. satukan hasil
+5. tulis `endpoint-inventory.md`
+
+### Recipe B — Hybrid Next.js audit
+1. scan codebase dulu
+2. verifikasi sinyal Next.js
+3. identifikasi JS bundle relevan
+4. jalankan LinkFinder pada asset penting
+5. dedupe hasil dan cocokkan ke code
+6. tulis laporan final dengan label confidence
+
+### Recipe C — Mulai dari satu endpoint
+Kalau user memberi satu endpoint seperti `/api/orders`, lakukan:
+1. cari endpoint exact match di code
+2. cari keluarga path terkait: `/api/order`, `/api/orders/*`, `orders/[id]`
+3. cari pemanggilan endpoint itu di frontend/backend
+4. masukkan endpoint inti + relasinya ke laporan markdown
 
 ## Workflow
 
-1. **Identify target scope**
-   - repo path, live website, or both
+1. **Tentukan scope target**
+   - repo, website, atau keduanya
 
-2. **Determine mode**
-   - code, crawl, or hybrid
-   - default to hybrid when both repo and live target are available
+2. **Tentukan mode**
+   - `code`, `crawl`, atau `hybrid`
+   - default ke `hybrid` bila repo dan website sama-sama tersedia
 
-3. **Detect stack first**
-   - inspect framework/runtime before choosing extraction strategy
+3. **Deteksi stack dulu**
+   - jangan langsung crawl
+   - cari framework/runtime dan lokasi route utamanya
 
-4. **Inspect code sources first**
-   - route files
-   - handlers/controllers
-   - endpoint references in frontend/backend code
+4. **Scan code dulu**
+   - file route
+   - handler/controller
+   - panggilan endpoint dari frontend/backend
 
-5. **Apply Next.js verification gate**
-   - if verified and crawl branch is in scope, proceed
-   - otherwise skip browser/web crawling and document the skip
+5. **Terapkan Next.js verification gate**
+   - kalau lolos dan crawl memang in-scope, lanjut
+   - kalau tidak, skip browser/web crawl dan tulis alasannya
 
-6. **Run LinkFinder for the crawl branch**
-   - target relevant JS assets
-   - collect candidate endpoints
-   - deduplicate and classify them separately
+6. **Pakai LinkFinder hanya untuk cabang crawl**
+   - targetkan JS asset yang relevan
+   - kumpulkan kandidat endpoint
+   - dedupe hasil
+   - simpan sebagai `linkfinder-discovered` dulu
 
-7. **Merge and normalize findings**
-   - combine route definitions, live URLs, and JS discoveries
-   - normalize slashes, query patterns, and duplicates
+7. **Normalisasi dan gabungkan temuan**
+   - satukan route code, URL live, dan hasil JS
+   - rapikan slash, query string, dan duplikat
 
-8. **Write markdown report**
-   - include summary, inventory sections, evidence, and gaps
+8. **Tulis laporan markdown**
+   - wajib ada summary, inventory, evidence, dan gaps
 
-9. **Verify the report**
-   - confirm file path
-   - confirm categories are present
-   - confirm Next.js/crawl decision is documented
+9. **Verifikasi output**
+   - path file jelas
+   - endpoint sudah dikelompokkan
+   - keputusan pakai/skip crawl terdokumentasi
 
 ## Common Pitfalls
 
-1. Calling the result "all endpoints" when only one discovery source was checked.
-2. Using browser/web crawl before verifying the target is Next.js.
-3. Treating LinkFinder output as confirmed-live evidence by default.
-4. Missing dynamic routes such as `[slug]`, `[id]`, and catch-all segments.
-5. Ignoring nested routers or framework-specific route registration.
-6. Failing to distinguish public pages from APIs and callbacks.
-7. Producing a flat list without evidence paths.
-8. Overwriting the markdown report without stating its output path.
-9. Skipping JS-based endpoint references in frontend-heavy apps.
-10. Letting crawl noise dominate stronger code evidence.
+1. Mengklaim "semua endpoint" padahal baru cek satu sumber.
+2. Langsung crawl sebelum verifikasi Next.js.
+3. Menganggap hasil LinkFinder otomatis confirmed-live.
+4. Melewatkan route dinamis seperti `[slug]`, `[id]`, `[...catchAll]`.
+5. Lupa nested router atau framework-specific registration.
+6. Tidak memisahkan public page, API, auth, admin, dan webhook.
+7. Hanya bikin list mentah tanpa evidence.
+8. Menimpa file output tanpa menyebut path laporannya.
+9. Mengabaikan referensi endpoint di frontend-heavy app.
+10. Membiarkan noise crawl mengalahkan bukti code yang lebih kuat.
 
 ## Verification Checklist
 
-- [ ] Target scope identified (repo, website, or both)
-- [ ] Mode chosen and stated in the report
-- [ ] Stack detection completed before extraction
-- [ ] Code route inspection completed
-- [ ] Next.js verification completed before any crawl escalation
-- [ ] LinkFinder used only when policy conditions were met
-- [ ] Endpoints classified by confidence/source
-- [ ] Markdown report written to a clear output path
-- [ ] Evidence section includes file paths and/or URLs
-- [ ] Unverified findings are explicitly labeled
+- [ ] Scope target jelas: repo, website, atau keduanya
+- [ ] Mode kerja tertulis: `code`, `crawl`, atau `hybrid`
+- [ ] Stack detection selesai sebelum ekstraksi
+- [ ] Code route inspection sudah dilakukan
+- [ ] Next.js verification selesai sebelum crawl/browser dipakai
+- [ ] LinkFinder hanya dipakai saat policy terpenuhi
+- [ ] Setiap endpoint punya label confidence/source
+- [ ] Laporan markdown ditulis ke output path yang jelas
+- [ ] Section `Evidence` berisi file path dan/atau URL
+- [ ] Temuan yang belum pasti diberi label `unverified`
