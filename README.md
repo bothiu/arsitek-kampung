@@ -14,7 +14,14 @@ Skill Hermes untuk **inventaris endpoint website/project** dengan pendekatan:
 
 ## Isi repo
 - `SKILL.md` — definisi skill utama
+- `references/report-template.md` — template laporan output
+- `examples/endpoint-inventory.md` — contoh hasil laporan markdown
 - `LICENSE` — lisensi MIT
+
+## Catatan distribusi
+- install langsung dari raw `SKILL.md` cocok untuk skill utamanya
+- file `references/` dan `examples/` disimpan di repo sebagai bahan acuan
+- jika installer pihak ketiga hanya menyalin `SKILL.md`, file pendukung mungkin belum ikut tersalin otomatis
 
 ## Cara install di Hermes
 

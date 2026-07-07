@@ -1,7 +1,7 @@
 ---
 name: arsitek-kampung
 description: "Use when the user wants to discover and document website or project endpoints into a markdown inventory using hybrid code inspection and conditional crawling for verified Next.js targets."
-version: 1.1.0
+version: 1.2.0
 author: Hermes Agent
 license: MIT
 platforms: [linux, macos]
@@ -144,12 +144,13 @@ Jangan pakai LinkFinder kalau:
 - workflow akan jadi terlalu noisy tanpa bukti kuat
 
 ### LinkFinder install cepat
-Contoh setup minimal:
+Contoh setup minimal tanpa clone penuh repo:
 
 ```bash
-git clone https://github.com/GerbenJavado/LinkFinder.git
-cd LinkFinder
-pip3 install -r requirements.txt
+mkdir -p .runtime/linkfinder
+cd .runtime/linkfinder
+curl -fsSLo linkfinder.py https://raw.githubusercontent.com/GerbenJavado/LinkFinder/master/linkfinder.py
+python3 -m pip install jsbeautifier
 python3 linkfinder.py -h
 ```
 
@@ -348,6 +349,14 @@ Kalau user memberi satu endpoint seperti `/api/orders`, lakukan:
 8. Menimpa file output tanpa menyebut path laporannya.
 9. Mengabaikan referensi endpoint di frontend-heavy app.
 10. Membiarkan noise crawl mengalahkan bukti code yang lebih kuat.
+
+## Support Files
+
+Repo skill ini menyertakan file pendukung berikut:
+- `references/report-template.md` — template laporan yang bisa dipakai ulang
+- `examples/endpoint-inventory.md` — contoh hasil akhir laporan markdown
+
+Kalau skill ini diinstal ke Hermes, file di `references/` bisa dipakai sebagai linked reference untuk membantu output tetap konsisten.
 
 ## Verification Checklist
 
