@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import argparse
 import re
-import shutil
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -107,7 +107,15 @@ Default output target:
 
 
 def main() -> None:
-    bundle_dir = DEFAULT_BUNDLE_DIR
+    parser = argparse.ArgumentParser(description="Generate the single-file install bundle repo")
+    parser.add_argument(
+        "--bundle-dir",
+        default=str(DEFAULT_BUNDLE_DIR),
+        help="Target directory for the generated bundle repo",
+    )
+    args = parser.parse_args()
+
+    bundle_dir = Path(args.bundle_dir).expanduser().resolve()
 
     source_skill = read(ROOT / "SKILL.md")
     report_template = read(ROOT / "references" / "report-template.md")

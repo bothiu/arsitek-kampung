@@ -42,10 +42,26 @@ Dari repo source utama:
 python3 scripts/generate_bundle.py
 ```
 
-Script ini akan regenerate file bundle ke sibling repo:
+Atau kalau mau target path lain:
+```bash
+python3 scripts/generate_bundle.py --bundle-dir /path/ke/repo-bundle
+```
+
+Script ini akan regenerate file bundle ke sibling repo default:
 - `/opt/data/workspace/arsitek-kampung-install-bundle`
 
 Lalu tinggal commit/push repo bundle.
+
+## GitHub Action
+Ada workflow:
+- `.github/workflows/sync-install-bundle.yml`
+
+Trigger:
+- push ke `main` yang mengubah `SKILL.md`, `references/`, `examples/`, `LICENSE`, `README.md`, atau script generator
+- manual `workflow_dispatch`
+
+Secret yang dibutuhkan di repo source:
+- `BUNDLE_PUSH_TOKEN` → token GitHub yang bisa push ke `bothiu/arsitek-kampung-install-bundle`
 
 ## Cara pakai singkat
 Contoh trigger:
