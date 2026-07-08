@@ -36,6 +36,17 @@ hermes skills install https://raw.githubusercontent.com/bothiu/arsitek-kampung/m
 npx -y skills add bothiu/arsitek-kampung --skill arsitek-kampung --agent hermes-agent --global --yes
 ```
 
+## Cara maintainer update bundle
+Dari repo source utama:
+```bash
+python3 scripts/generate_bundle.py
+```
+
+Script ini akan regenerate file bundle ke sibling repo:
+- `/opt/data/workspace/arsitek-kampung-install-bundle`
+
+Lalu tinggal commit/push repo bundle.
+
 ## Cara pakai singkat
 Contoh trigger:
 - `cek endpoint project ini`
