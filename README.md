@@ -3,8 +3,9 @@
 Skill Hermes untuk **inventaris endpoint website/project** dengan pendekatan:
 - hybrid by default
 - code inspection dulu
-- crawl hanya untuk target **Next.js** yang sudah terverifikasi
-- `LinkFinder` dipakai untuk ekstraksi kandidat endpoint dari JavaScript pada cabang crawl
+- crawl penuh hanya untuk target **Next.js** yang sudah terverifikasi
+- untuk website publik non-Next, tersedia **public-site audit mode** yang ringan berbasis homepage/robots/sitemap/redirect
+- `LinkFinder` dipakai untuk ekstraksi kandidat endpoint dari JavaScript pada cabang crawl Next.js
 
 ## Cocok dipakai untuk
 - memetakan semua route dari codebase
