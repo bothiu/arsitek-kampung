@@ -22,6 +22,7 @@ Skill Hermes untuk **inventaris endpoint website/project** dengan pendekatan:
 - install langsung dari raw `SKILL.md` cocok untuk skill utamanya
 - file `references/` dan `examples/` disimpan di repo sebagai bahan acuan
 - jika installer pihak ketiga hanya menyalin `SKILL.md`, file pendukung mungkin belum ikut tersalin otomatis
+- tersedia companion bundle repo untuk distribusi single-file dengan support content ter-embed: `https://github.com/bothiu/arsitek-kampung-install-bundle`
 
 ## Cara install di Hermes
 
